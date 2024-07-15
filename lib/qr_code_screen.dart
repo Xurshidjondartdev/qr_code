@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:qr_code_scanner/qr_code_scanner.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
 class QRCodeScreen extends StatefulWidget {
@@ -14,14 +15,25 @@ class QRCodeScreenState extends State<QRCodeScreen> {
   final TextEditingController _textController = TextEditingController();
   File? _image;
   final ImagePicker _picker = ImagePicker();
+  final GlobalKey _qrKey = GlobalKey(debugLabel: 'QR');
+  QRViewController? _controller;
+  String? _qrText;
 
   Future<void> _pickImage(ImageSource source) async {
     final pickedFile = await _picker.pickImage(source: source);
     if (pickedFile != null) {
       setState(() {
         _image = File(pickedFile.path);
+        _qrText = null;
+        _controller?.resumeCamera();
       });
     }
+  }
+
+  @override
+  void dispose() {
+    _controller?.dispose();
+    super.dispose();
   }
 
   @override
@@ -30,7 +42,7 @@ class QRCodeScreenState extends State<QRCodeScreen> {
       appBar: AppBar(
         backgroundColor: Colors.green,
         centerTitle: true,
-        title: const Text('QR Code Generator'),
+        title: const Text('QR Code Generator and Scanner'),
       ),
       floatingActionButton: Column(
         mainAxisAlignment: MainAxisAlignment.end,
@@ -89,11 +101,43 @@ class QRCodeScreenState extends State<QRCodeScreen> {
                   ),
                 ),
               const SizedBox(height: 20),
-              if (_image != null) Image.file(_image!),
+              if (_qrText != null)
+                Text(
+                  'QR Code: <<< $_qrText  >>>',
+                  style: const TextStyle(fontSize: 16),
+                ),
+              if (_image != null && _qrText == null)
+                SizedBox(
+                  width: double.maxFinite,
+                  height: 350,
+                  child: QRView(
+                    key: _qrKey,
+                    onQRViewCreated: _onQRViewCreated,
+                    overlay: QrScannerOverlayShape(
+                      borderColor: Colors.red,
+                      borderRadius: 10,
+                      borderLength: 30,
+                      borderWidth: 10,
+                      cutOutSize: 200,
+                    ),
+                  ),
+                ),
             ],
           ),
         ),
       ),
     );
+  }
+
+  void _onQRViewCreated(QRViewController controller) {
+    setState(() {
+      _controller = controller;
+    });
+    controller.scannedDataStream.listen((scanData) {
+      setState(() {
+        _qrText = scanData.code;
+        _controller?.pauseCamera();
+      });
+    });
   }
 }
