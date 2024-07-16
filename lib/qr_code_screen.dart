@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:qr_code_scanner/qr_code_scanner.dart';
 import 'package:qr_flutter/qr_flutter.dart';
+import 'package:qr_code_tools/qr_code_tools.dart';
 
 class QRCodeScreen extends StatefulWidget {
   const QRCodeScreen({super.key});
@@ -13,20 +14,38 @@ class QRCodeScreen extends StatefulWidget {
 
 class QRCodeScreenState extends State<QRCodeScreen> {
   final TextEditingController _textController = TextEditingController();
-  File? _image;
+  File? image;
   final ImagePicker _picker = ImagePicker();
   final GlobalKey _qrKey = GlobalKey(debugLabel: 'QR');
   QRViewController? _controller;
   String? _qrText;
+  bool _showScanner = false;
 
   Future<void> _pickImage(ImageSource source) async {
     final pickedFile = await _picker.pickImage(source: source);
     if (pickedFile != null) {
       setState(() {
-        _image = File(pickedFile.path);
+        image = File(pickedFile.path);
         _qrText = null;
         _controller?.resumeCamera();
       });
+
+      try {
+        String? qrCode = await QrCodeToolsPlugin.decodeFrom(pickedFile.path);
+        if (qrCode != null) {
+          setState(() {
+            _qrText = qrCode;
+          });
+        } else {
+          setState(() {
+            _qrText = "No QR code found in the image";
+          });
+        }
+      } catch (e) {
+        setState(() {
+          _qrText = "Error decoding QR code: $e";
+        });
+      }
     }
   }
 
@@ -48,9 +67,20 @@ class QRCodeScreenState extends State<QRCodeScreen> {
         mainAxisAlignment: MainAxisAlignment.end,
         children: [
           const SizedBox(height: 20),
-          FloatingActionButton(
-            onPressed: () => _pickImage(ImageSource.camera),
-            child: Image.asset("assets/images/camera.png"),
+          GestureDetector(
+            onLongPress: () {
+              setState(() {
+                _showScanner = false;
+              });
+            },
+            child: FloatingActionButton(
+              onPressed: () {
+                setState(() {
+                  _showScanner = true;
+                });
+              },
+              child: Image.asset("assets/images/camera.png"),
+            ),
           ),
           const SizedBox(height: 20),
           FloatingActionButton(
@@ -73,7 +103,7 @@ class QRCodeScreenState extends State<QRCodeScreen> {
                 textInputAction: TextInputAction.done,
                 maxLines: 1,
                 decoration: const InputDecoration(
-                  hintText: "Text yoki URL kiriting",
+                  hintText: "Enter text or URL",
                   hintMaxLines: 1,
                   hintStyle: TextStyle(
                     color: Color.fromARGB(223, 78, 84, 101),
@@ -85,10 +115,15 @@ class QRCodeScreenState extends State<QRCodeScreen> {
               ),
               const SizedBox(height: 20),
               ElevatedButton(
+                onLongPress: () {
+                  setState(() {
+                    _textController.clear();
+                  });
+                },
                 onPressed: () {
                   setState(() {});
                 },
-                child: const Text("QR code yaratish"),
+                child: const Text("Create a QR code"),
               ),
               const SizedBox(height: 20),
               if (_textController.text.isNotEmpty)
@@ -106,7 +141,7 @@ class QRCodeScreenState extends State<QRCodeScreen> {
                   'QR Code: <<< $_qrText  >>>',
                   style: const TextStyle(fontSize: 16),
                 ),
-              if (_image != null && _qrText == null)
+              if (_showScanner)
                 SizedBox(
                   width: double.maxFinite,
                   height: 350,
@@ -137,6 +172,7 @@ class QRCodeScreenState extends State<QRCodeScreen> {
       setState(() {
         _qrText = scanData.code;
         _controller?.pauseCamera();
+        _showScanner = false;
       });
     });
   }
