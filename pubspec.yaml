@@ -16,7 +16,7 @@ dependencies:
   bloc: ^8.1.4
   qr_code_scanner: ^1.0.1
   flutter_barcode_scanner: ^2.0.0
-  qr_code_tools: ^0.1.0
+  flutter_launcher_icons: ^0.13.1
 
 dev_dependencies:
   flutter_test:
@@ -27,3 +27,10 @@ flutter:
   uses-material-design: true
   assets:
     - assets/images/
+
+flutter_launcher_icons:
+  android: true
+  ios: false
+  image_path: "assets/images/logo.png"
+  # adaptive_icon_background: "#FFFFFF"
+  # adaptive_icon_foreground: "assets/images/logo.png"

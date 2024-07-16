@@ -1,9 +1,8 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:qr_code_scanner/qr_code_scanner.dart';
 import 'package:qr_flutter/qr_flutter.dart';
-import 'package:qr_code_tools/qr_code_tools.dart';
+// import 'package:qr_code_tools/qr_code_tools.dart';
 
 class QRCodeScreen extends StatefulWidget {
   const QRCodeScreen({super.key});
@@ -14,7 +13,7 @@ class QRCodeScreen extends StatefulWidget {
 
 class QRCodeScreenState extends State<QRCodeScreen> {
   final TextEditingController _textController = TextEditingController();
-  File? image;
+  // File? image;
   final ImagePicker _picker = ImagePicker();
   final GlobalKey _qrKey = GlobalKey(debugLabel: 'QR');
   QRViewController? _controller;
@@ -25,27 +24,9 @@ class QRCodeScreenState extends State<QRCodeScreen> {
     final pickedFile = await _picker.pickImage(source: source);
     if (pickedFile != null) {
       setState(() {
-        image = File(pickedFile.path);
         _qrText = null;
         _controller?.resumeCamera();
       });
-
-      try {
-        String? qrCode = await QrCodeToolsPlugin.decodeFrom(pickedFile.path);
-        if (qrCode != null) {
-          setState(() {
-            _qrText = qrCode;
-          });
-        } else {
-          setState(() {
-            _qrText = "No QR code found in the image";
-          });
-        }
-      } catch (e) {
-        setState(() {
-          _qrText = "Error decoding QR code: $e";
-        });
-      }
     }
   }
 
